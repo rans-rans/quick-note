@@ -1,3 +1,9 @@
-<script lang="ts"></script>
+<script lang="ts">
+  import CustomCaretTextarea from "./components/CustomCaretTextarea.svelte";
 
-<div>Quick Note</div>
+  let docText = $state("");
+</script>
+
+<div>
+  <CustomCaretTextarea bind:value={docText} />
+</div>
