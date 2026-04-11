@@ -1,6 +1,10 @@
 <script lang="ts">
   import { save } from "@tauri-apps/plugin-dialog";
-  import { writeTextFile, BaseDirectory } from "@tauri-apps/plugin-fs";
+  import {
+    writeTextFile,
+    BaseDirectory,
+    readTextFileLines,
+  } from "@tauri-apps/plugin-fs";
   import CustomCaretTextarea from "./components/CustomCaretTextarea.svelte";
   import { onMount } from "svelte";
   import { listen } from "@tauri-apps/api/event";
@@ -37,6 +41,7 @@
   }
 
   onMount(() => {
+    // Listen for the "save" event from the main process
     const listenToSaveButton = listen("save", (_) => {
       console.log("Received save-doc event, triggering saveDocument");
       saveDocument(
@@ -47,8 +52,22 @@
       );
     });
 
+    // Listen for file drop events for .txt files
+    const listenToFileDrop = listen("tauri://drag-drop", (event) => {
+      const payload = event.payload as Record<string, unknown>;
+      const filePath = (payload.paths as string[])[0];
+      if (!filePath || !filePath.endsWith(".txt")) return;
+      docText = "";
+      readTextFileLines(filePath).then(async (lines) => {
+        for await (const line of lines) {
+          docText += line + "\n";
+        }
+      });
+    });
+
     return () => {
       listenToSaveButton.then((unlisten) => unlisten());
+      listenToFileDrop.then((unlisten) => unlisten());
     };
   });
 </script>
