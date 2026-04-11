@@ -1,42 +1,41 @@
 <script lang="ts">
-  import { save } from "@tauri-apps/plugin-dialog";
-  import {
-    writeTextFile,
-    BaseDirectory,
-    readTextFileLines,
-  } from "@tauri-apps/plugin-fs";
   import CustomCaretTextarea from "./components/CustomCaretTextarea.svelte";
   import { onMount } from "svelte";
   import { listen } from "@tauri-apps/api/event";
-  import { documentDir } from "@tauri-apps/api/path";
+  import {
+    handleFileDrop,
+    handleSave,
+    changeWindowTitle,
+  } from "./window_actions";
 
   let docText = $state("");
+  let fileModified = $derived.by(() => {
+    const modified = docText !== docProps.originalText;
+    return modified;
+  });
 
-  async function saveDocument(e: KeyboardEvent) {
-    if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
+  let docProps = $state({
+    path: null as string | null,
+    originalText: null as string | null,
+  });
+
+  // An effect to update the window title based on the document's modified state
+  $effect(() => {
+    const fileModified = docText !== docProps.originalText;
+    const fileName = docProps.path
+      ? docProps.path.split("/").pop()
+      : "Untitled Document";
+    if (fileModified) {
+      changeWindowTitle(`${fileName}*`);
+    } else {
+      changeWindowTitle(fileName ?? "Untitled Document");
+    }
+  });
+
+  async function onKeyPress(e: KeyboardEvent) {
+    if (e.key === "s" &&(e.metaKey || e.ctrlKey) && fileModified) {
       e.preventDefault();
-      if (docText.length === 0) {
-        return;
-      }
-      const docsDir: string = await documentDir();
-      const path = await save({
-        title: "Save Document",
-        defaultPath: docsDir,
-        filters: [
-          {
-            name: "Text Files",
-            extensions: ["txt"],
-          },
-        ],
-      });
-      if (path === null) return;
-      const normalizedPath = path.toLowerCase().endsWith(".txt")
-        ? path
-        : `${path}.txt`;
-
-      await writeTextFile(normalizedPath, docText, {
-        baseDir: BaseDirectory.Home,
-      });
+      handleSave(docText);
     }
   }
 
@@ -44,7 +43,7 @@
     // Listen for the "save" event from the main process
     const listenToSaveButton = listen("save", (_) => {
       console.log("Received save-doc event, triggering saveDocument");
-      saveDocument(
+      onKeyPress(
         new KeyboardEvent("keydown", {
           key: "s",
           ctrlKey: true,
@@ -53,15 +52,11 @@
     });
 
     // Listen for file drop events for .txt files
-    const listenToFileDrop = listen("tauri://drag-drop", (event) => {
-      const payload = event.payload as Record<string, unknown>;
-      const filePath = (payload.paths as string[])[0];
-      if (!filePath || !filePath.endsWith(".txt")) return;
-      docText = "";
-      readTextFileLines(filePath).then(async (lines) => {
-        for await (const line of lines) {
-          docText += line + "\n";
-        }
+    const listenToFileDrop = listen("tauri://drag-drop", async (_) => {
+      handleFileDrop((filePath, content) => {
+        docText = content;
+        docProps.path = filePath;
+        docProps.originalText = content;
       });
     });
 
@@ -72,7 +67,7 @@
   });
 </script>
 
-<svelte:window on:keydown={saveDocument} />
+<svelte:window on:keydown={onKeyPress} />
 <div>
   <CustomCaretTextarea bind:value={docText} />
 </div>
