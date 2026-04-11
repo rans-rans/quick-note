@@ -735,6 +735,8 @@
         "npm:@tauri-apps/api@2",
         "npm:@tauri-apps/cli@2",
         "npm:@tauri-apps/plugin-clipboard-manager@~2.3.2",
+        "npm:@tauri-apps/plugin-dialog@2.7",
+        "npm:@tauri-apps/plugin-fs@2.5",
         "npm:@tauri-apps/plugin-opener@2",
         "npm:svelte-check@4",
         "npm:svelte@5",

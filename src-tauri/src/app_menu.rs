@@ -17,13 +17,49 @@ pub fn setup_menu<R: Runtime>(app: &mut App<R>) -> tauri::Result<()> {
         .build()?;
 
     let edit_menu = SubmenuBuilder::new(app, "Edit")
-        .item(&MenuItem::with_id(app, "undo", "Undo", true, Some("CmdOrCtrl+Z"))?)
-        .item(&MenuItem::with_id(app, "redo", "Redo", true, Some("CmdOrCtrl+Y"))?)
+        .item(&MenuItem::with_id(
+            app,
+            "undo",
+            "Undo",
+            true,
+            Some("CmdOrCtrl+Z"),
+        )?)
+        .item(&MenuItem::with_id(
+            app,
+            "redo",
+            "Redo",
+            true,
+            Some("CmdOrCtrl+Y"),
+        )?)
         .separator()
-        .item(&MenuItem::with_id(app, "cut", "Cut", true, Some("CmdOrCtrl+X"))?)
-        .item(&MenuItem::with_id(app, "copy", "Copy", true, Some("CmdOrCtrl+C"))?)
-        .item(&MenuItem::with_id(app, "paste", "Paste", true, Some("CmdOrCtrl+V"))?)
-        .item(&MenuItem::with_id(app, "select_all", "Select All", true, Some("CmdOrCtrl+A"))?)
+        .item(&MenuItem::with_id(
+            app,
+            "cut",
+            "Cut",
+            true,
+            Some("CmdOrCtrl+X"),
+        )?)
+        .item(&MenuItem::with_id(
+            app,
+            "copy",
+            "Copy",
+            true,
+            Some("CmdOrCtrl+C"),
+        )?)
+        .item(&MenuItem::with_id(
+            app,
+            "paste",
+            "Paste",
+            true,
+            Some("CmdOrCtrl+V"),
+        )?)
+        .item(&MenuItem::with_id(
+            app,
+            "select_all",
+            "Select All",
+            true,
+            Some("CmdOrCtrl+A"),
+        )?)
         .build()?;
 
     let menu = MenuBuilder::new(app)
