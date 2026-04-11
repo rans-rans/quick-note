@@ -7,20 +7,25 @@
     changeWindowTitle,
   } from "./window_actions";
 
-  let docText = $state("");
-  let fileModified = $derived.by(() => {
-    const modified = docText !== docProps.originalText;
-    return modified;
-  });
-
+  let docText = $state(null as string | null);
   let docProps = $state({
     path: null as string | null,
     originalText: null as string | null,
   });
 
+  let fileModified = $derived.by(() => {
+    if (
+      docProps.originalText === null &&
+      (docText === "" || docText === null)
+    ) {
+      return false;
+    }
+    const modified = docText !== docProps.originalText;
+    return modified;
+  });
+
   // An effect to update the window title based on the document's modified state
   $effect(() => {
-    const fileModified = docText !== docProps.originalText;
     const fileName = docProps.path
       ? docProps.path.split("/").pop()
       : "Untitled Document";
@@ -31,18 +36,28 @@
     }
   });
 
-  async function onKeyPress(e: KeyboardEvent) {
-    if (e.key === "s" &&(e.metaKey || e.ctrlKey) && fileModified) {
+  async function onSave(e: KeyboardEvent) {
+    if (
+      e.key === "s" &&
+      (e.metaKey || e.ctrlKey) &&
+      fileModified &&
+      docText !== null
+    ) {
       e.preventDefault();
-      handleSave(docText);
+      handleSave(
+        docText ?? "",
+        () => {
+          docProps.originalText = docText;
+        },
+        docProps.path ?? undefined,
+      );
     }
   }
 
   onMount(() => {
     // Listen for the "save" event from the main process
     const listenToSaveButton = listen("save", (_) => {
-      console.log("Received save-doc event, triggering saveDocument");
-      onKeyPress(
+      onSave(
         new KeyboardEvent("keydown", {
           key: "s",
           ctrlKey: true,
@@ -66,12 +81,9 @@
   });
 </script>
 
-<svelte:window on:keydown={onKeyPress} />
+<svelte:window on:keydown={onSave} />
 <div>
-  <textarea
-    class="editor-textarea"
-    bind:value={docText}
-    spellcheck="false"
+  <textarea class="editor-textarea" bind:value={docText}
   ></textarea>
 </div>
 

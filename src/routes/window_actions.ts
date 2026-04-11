@@ -12,12 +12,17 @@ async function changeWindowTitle(newTitle: string) {
     }
 }
 
-async function handleSave(docText: string) {
+async function handleSave(
+    docText: string,
+    onDone: () => void,
+    filePath?: string,
+) {
     if (docText.length === 0) {
         return;
     }
     const docsDir: string = await documentDir();
-    const path = await save({
+
+    const path = filePath ?? await save({
         title: "Save Document",
         defaultPath: docsDir,
         filters: [
@@ -35,6 +40,7 @@ async function handleSave(docText: string) {
     await writeTextFile(normalizedPath, docText, {
         baseDir: BaseDirectory.Home,
     });
+    onDone();
 }
 
 async function handleFileDrop(
