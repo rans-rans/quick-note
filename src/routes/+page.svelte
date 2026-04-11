@@ -1,5 +1,4 @@
 <script lang="ts">
-  import CustomCaretTextarea from "./components/CustomCaretTextarea.svelte";
   import { onMount } from "svelte";
   import { listen } from "@tauri-apps/api/event";
   import {
@@ -69,5 +68,28 @@
 
 <svelte:window on:keydown={onKeyPress} />
 <div>
-  <CustomCaretTextarea bind:value={docText} />
+  <textarea
+    class="editor-textarea"
+    bind:value={docText}
+    spellcheck="false"
+  ></textarea>
 </div>
+
+<style>
+  .editor-textarea {
+    display: block;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    border: none;
+    resize: none;
+    padding: 0.5rem;
+    font-size: 16px;
+    line-height: 1.5;
+    outline: none;
+  }
+
+  .editor-textarea:focus {
+    outline: none;
+  }
+</style>
