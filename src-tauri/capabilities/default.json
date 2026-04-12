@@ -13,8 +13,17 @@
     "opener:default",
     "dialog:default",
     "fs:default",
+    "core:path:default",
     {
       "identifier": "fs:allow-write-text-file",
+      "allow": [
+        {
+          "path": "$HOME/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-text-file-lines",
       "allow": [
         {
           "path": "$HOME/**"

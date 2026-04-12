@@ -9,7 +9,6 @@ pub fn setup_menu<R: Runtime>(app: &mut App<R>) -> tauri::Result<()> {
     let file_menu = file_menu::create_file_menu(app)?;
     let edit_menu = edit_menu::create_edit_menu(app)?;
 
-    // let file_menu = file_menu::create_file_menu();
     let menu = MenuBuilder::new(app)
         .items(&[&file_menu, &edit_menu])
         .text("view", "View")

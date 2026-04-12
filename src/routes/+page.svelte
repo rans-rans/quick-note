@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { listen } from "@tauri-apps/api/event";
+  import { invoke } from "@tauri-apps/api/core";
   import {
-    handleFileDrop,
+    handleFileOpen,
     handleSave,
     changeWindowTitle,
   } from "./window_actions";
@@ -26,13 +27,17 @@
 
   // An effect to update the window title based on the document's modified state
   $effect(() => {
-    const fileName = docProps.path
-      ? docProps.path.split("/").pop()
-      : "Untitled Document";
-    if (fileModified) {
-      changeWindowTitle(`${fileName}*`);
-    } else {
-      changeWindowTitle(fileName ?? "Untitled Document");
+    try {
+      const fileName = docProps.path
+        ? docProps.path.split("/").pop()
+        : "Untitled Document";
+      if (fileModified) {
+        changeWindowTitle(`${fileName}*`);
+      } else {
+        changeWindowTitle(fileName ?? "Untitled Document");
+      }
+    } catch (error) {
+      console.error("Error updating window title:", error);
     }
   });
 
@@ -55,6 +60,21 @@
   }
 
   onMount(() => {
+    // Check if there's a pending file to open from command line arguments
+    (async () => {
+      try {
+        const pendingFile = await invoke<string | null>("get_pending_file");
+        if (pendingFile) {
+          handleFileOpen(pendingFile, (filePath, content) => {
+            docText = content;
+            docProps = { ...docProps, path: filePath, originalText: content };
+          });
+        }
+      } catch (error) {
+        alert("Error loading file. Please try opening the file manually.");
+      }
+    })();
+
     // Listen for the "save" event from the main process
     const listenToSaveButton = listen("save", (_) => {
       onSave(
@@ -66,12 +86,25 @@
     });
 
     // Listen for file drop events for .txt files
-    const listenToFileDrop = listen("tauri://drag-drop", async (_) => {
-      handleFileDrop((filePath, content) => {
-        docText = content;
-        docProps.path = filePath;
-        docProps.originalText = content;
-      });
+    const listenToFileDrop = listen("tauri://drag-drop", async (event) => {
+      try {
+        const payload = event.payload as Record<string, unknown>;
+        if (!payload.paths || !(payload.paths as string[]).length) {
+          return;
+        }
+
+        const filePath = (payload.paths as string[])[0];
+        if (!filePath || !filePath.endsWith(".txt")) {
+          return;
+        }
+        handleFileOpen(filePath, (filePath, content) => {
+          docText = content;
+          docProps.path = filePath;
+          docProps.originalText = content;
+        });
+      } catch (error) {
+        alert("Error handling dropped file");
+      }
     });
 
     return () => {
@@ -83,8 +116,7 @@
 
 <svelte:window on:keydown={onSave} />
 <div>
-  <textarea class="editor-textarea" bind:value={docText}
-  ></textarea>
+  <textarea class="editor-textarea" bind:value={docText}></textarea>
 </div>
 
 <style>
