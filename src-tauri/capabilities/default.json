@@ -8,8 +8,6 @@
   "permissions": [
     "core:default",
     "core:window:allow-set-title",
-    "clipboard-manager:allow-read-text",
-    "clipboard-manager:allow-write-text",
     "opener:default",
     "dialog:default",
     "fs:default",

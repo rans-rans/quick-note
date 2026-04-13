@@ -13,7 +13,7 @@ async function changeWindowTitle(newTitle: string) {
 
 async function handleSave(
     docText: string,
-    onDone: () => void,
+    onDone: (savedPath: string) => void,
     filePath?: string,
 ) {
     if (docText.length === 0) {
@@ -39,7 +39,7 @@ async function handleSave(
     await writeTextFile(normalizedPath, docText, {
         baseDir: BaseDirectory.Home,
     });
-    onDone();
+    onDone(normalizedPath);
 }
 
 async function handleFileOpen(
@@ -53,7 +53,6 @@ async function handleFileOpen(
             documentData += line + "\n";
         }
 
-        console.log(`here is your new title ${filePath}`);
         const docTitle = filePath.split("/").pop() || "Untitled Document";
 
         onDone(filePath, documentData);

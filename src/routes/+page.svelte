@@ -7,23 +7,22 @@
     handleSave,
     changeWindowTitle,
   } from "./window_actions";
+  import { createHistoryStore } from "./history";
 
   let docText = $state(null as string | null);
+  let timer: any; // 500ms debounce timer
   let docProps = $state({
     path: null as string | null,
     originalText: null as string | null,
   });
 
   let fileModified = $derived.by(() => {
-    if (
-      docProps.originalText === null &&
-      (docText === "" || docText === null)
-    ) {
-      return false;
-    }
-    const modified = docText !== docProps.originalText;
-    return modified;
+    if (docProps.originalText === null && !docText) return false;
+    return docText !== docProps.originalText;
   });
+
+  // svelte-ignore state_referenced_locally
+  const doc = createHistoryStore(docText);
 
   // An effect to update the window title based on the document's modified state
   $effect(() => {
@@ -49,13 +48,45 @@
       docText !== null
     ) {
       e.preventDefault();
-      handleSave(
-        docText ?? "",
-        () => {
-          docProps.originalText = docText;
+      const savedText = docText;
+      await handleSave(
+        savedText,
+        (savedPath) => {
+          docProps.originalText = savedText;
+          docProps.path = savedPath;
         },
         docProps.path ?? undefined,
       );
+    }
+  }
+
+  function handleInput(e: Event) {
+    const target = e.target as HTMLTextAreaElement;
+
+    // Debounce: Wait 500ms after user stops typing before saving state
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      doc.push(target.value);
+    }, 450);
+  }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    const isMod = e.ctrlKey || e.metaKey; // Ctrl on Win, Cmd on Mac
+
+    if (isMod && e.key.toLowerCase() === "z") {
+      e.preventDefault();
+      if (e.shiftKey) {
+        doc.redo();
+      } else {
+        doc.undo();
+      }
+      docText = doc.state();
+    } else if (isMod && e.key.toLowerCase() === "y") {
+      e.preventDefault();
+      doc.redo();
+      docText = doc.state();
+    } else if (isMod && e.key.toLowerCase() === "s") {
+      onSave(e);
     }
   }
 
@@ -68,6 +99,7 @@
           handleFileOpen(pendingFile, (filePath, content) => {
             docText = content;
             docProps = { ...docProps, path: filePath, originalText: content };
+            doc.reset(content);
           });
         }
       } catch (error) {
@@ -101,6 +133,7 @@
           docText = content;
           docProps.path = filePath;
           docProps.originalText = content;
+          doc.reset(content);
         });
       } catch (error) {
         alert("Error handling dropped file");
@@ -114,9 +147,10 @@
   });
 </script>
 
-<svelte:window on:keydown={onSave} />
+<svelte:window on:keydown={handleKeyDown} />
 <div>
-  <textarea class="editor-textarea" bind:value={docText}></textarea>
+  <textarea class="editor-textarea" bind:value={docText} oninput={handleInput}
+  ></textarea>
 </div>
 
 <style>
